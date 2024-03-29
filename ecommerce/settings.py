@@ -26,7 +26,11 @@ SECRET_KEY = "django-insecure-^-v)lg^lc+m0dp80%3ckzazj_x0!wobyyj6wc%(f4c!7+b@a3@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "ismamk.pythonanywhere.com",
+    "*"
+
+]
 
 
 # Application definition
@@ -111,9 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
-
-USE_I18N = True
+TIME_ZONE = 'Asia/Dhaka'
 
 USE_TZ = True
 
@@ -139,9 +141,16 @@ REST_FRAMEWORK = {
     ],
 }
 
+USER_GROUPS= {
+        'superuser': 'Superuser',
+        'editor': 'Editor',
+        'customer': 'Customer',  
+    }
+
 DJOSER = {
-    'USER_ID_FIELD':"username",
- 
+    'USER_ID_FIELD': "username",
+    'LOGIN_FIELD': 'email',  # Use email as the login field
+    
 }
 
 
