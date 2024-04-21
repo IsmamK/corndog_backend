@@ -8,7 +8,8 @@ urlpatterns = [
 #  ---------------------------------------  General Paths    --------------------------------------- 
     #categories
     path('show_categories/', views.ShowCategories.as_view(), name='category-list'), #undocumented
-   
+    #subcategories
+     path('show_subcategories/', views.ShowSubCategories.as_view(), name='subcategory-list'), #undocumented
 
     #products (undocumented - filtering & searching )
     path("products/", views.AllProducts.as_view(), name="all_products"),
@@ -36,7 +37,9 @@ urlpatterns = [
     path('create_categories/', views.CreateCategories.as_view(), name='category-create'), #undocumented
     path('edit_categories/<int:pk>/', views.EditCategory.as_view(), name='category-detail'), #undocumented
 
-
+    #manage sub_categories
+    path('create_subcategories/', views.CreateSubCategories.as_view(), name='subcategory-create'), #undocumented
+    path('edit_subcategories/<int:pk>/', views.EditSubCategory.as_view(), name='subcategory-detail'), #undocumented
 
     #manage products
     path("create_product",views.CreateProduct.as_view(),name="create_product"), #undocumented

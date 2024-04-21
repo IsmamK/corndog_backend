@@ -9,12 +9,18 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = "__all__"
         
 
+class SubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = "__all__"
+
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
 
 class DiscountSerializer(serializers.ModelSerializer):
+    subcategories = serializers.PrimaryKeyRelatedField(queryset=SubCategory.objects.all(), required=False, many=True)
     class Meta:
         model = Discount
         exclude = ['users']
@@ -27,8 +33,12 @@ class DiscountSerializer(serializers.ModelSerializer):
             validated_data['amount'] = 9999999
 
         validated_data.pop('users', None)
+
+        subcategories = validated_data.pop('subcategories', None)
         discount = super().create(validated_data)
         
+        if subcategories:
+            discount.subcategories.set(subcategories)
 
         return discount
     
@@ -94,12 +104,30 @@ class CartSerializer(serializers.ModelSerializer):
         for cart_item in cart_items:
             subtotal += cart_item.product.price*cart_item.quantity
         return subtotal
+        
     def get_discount(self,obj):
         cart = obj 
+        amount = 0
         if cart.discount_code:
             discount = Discount.objects.get(code__iexact=cart.discount_code)
-            discount_serializer = DiscountSerializer(discount)  # Serialize the discount object
-            return discount_serializer.data  # Return serialized discount object
+            eligible_cart_items = CartItem.objects.filter(
+                    cart=cart,
+                    product__sub_category__in=discount.subcategories.all()
+                )
+            
+            print(eligible_cart_items)
+            if discount.subcategories.exists():
+                if discount.discount_type == "amount":
+                            amount = discount.amount
+                            print("A",amount)
+                else:
+                    for cart_item in eligible_cart_items:     
+                        amount += (cart_item.product.price*cart_item.quantity)*discount.amount/100
+                        
+                        
+                    
+            return amount
+        
         else:
             return None
 
@@ -110,55 +138,52 @@ class CartSerializer(serializers.ModelSerializer):
         subtotal = self.get_subtotal(cart)
 
         if discount:
-            if discount.get('discount_type') == "amount":
-                return subtotal - Decimal(discount.get('amount'))
-            else:
-                amount = Decimal(subtotal) * Decimal(discount.get('amount')) / 100
-                return subtotal - amount
+            print(discount)
+            return subtotal - discount
+            
         else:
             return subtotal
 
+
         
-
-
-class OrderItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OrderItem
-        fields = ['order', 'product', 'quantity']
-    
 class OrderSerializer(serializers.ModelSerializer):
-    order_items = serializers.SerializerMethodField()
-    grandtotal = serializers.SerializerMethodField()
+    order_items = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
+  
 
     class Meta:
         model = Order
-        fields = ['id', 'user','created_at',"shipping_address","phone_number", 'order_items',"grandtotal"]
+        fields = ['id', 'name', 'shipping_address', 'phone_number', 'order_items', 'discount', 'subtotal','grandtotal', 'created_at']
 
-    def get_order_items(self, obj):
-        order_items = OrderItem.objects.filter(order=obj)
-        order_item_details = []
-        for order_item in order_items:
-            product_details = {
-                'id': order_item.product.id,
-                'title': order_item.product.title,
-                'price': order_item.product.price,
-                
-            }
-            detailed_order_item = {
-                'order_item_id': order_item.id,
-                'product': product_details,
-                'quantity': order_item.quantity,
-                'subtotal' : order_item.product.price*order_item.quantity
-            }
-            order_item_details.append(detailed_order_item)
+    def create(self, validated_data):
+        # Extract order items data if present
+        order_items_data = validated_data.pop('order_items', [])
 
-        return order_item_details
+        # Create the order instance
+        order = Order.objects.create(**validated_data)
 
-    def get_grandtotal(self, obj):
-        order_items = OrderItem.objects.filter(order=obj)
-        grandtotal = 0 
-        for order_item in order_items:
-            grandtotal += order_item.product.price*order_item.quantity
-        return grandtotal
+        # Handle order items data if present
+        if order_items_data:
+            for order_item_data in order_items_data:
+                # Fetch the product instance using the product ID
+                product_id = order_item_data.get('product')
+                try:
+                    product = Product.objects.get(pk=product_id)
+                except Product.DoesNotExist:
+                    # Handle the case where the product doesn't exist
+                    raise serializers.ValidationError(f"Product with ID {product_id} does not exist.")
 
+                # Calculate the total using the product's price and the quantity
+                quantity = order_item_data.get('quantity', 1)  # Default quantity is 1
+                total = product.price * quantity
 
+                # Create the OrderItem instance
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                  
+                )
+
+        return order
+    
+   

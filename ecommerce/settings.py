@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'djoser',
     'api',
+    'django_filters',
 ]
 
 
@@ -139,6 +141,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     ],
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+   
 }
 
 USER_GROUPS= {
@@ -149,7 +153,7 @@ USER_GROUPS= {
 
 DJOSER = {
     'USER_ID_FIELD': "username",
-    'LOGIN_FIELD': 'email',  # Use email as the login field
+    'LOGIN_FIELD': 'email',  
     
 }
 
@@ -162,3 +166,4 @@ STATIC_URL = "/static/"
 
 SESSION_COOKIE_AGE = 1209600
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
