@@ -29,7 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "ismamk.pythonanywhere.com",
-    "*"
+    "thefoodpark.xyz",
+    "www.thefoodpark.xyz"
 
 ]
 
